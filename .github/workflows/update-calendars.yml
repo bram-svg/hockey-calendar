@@ -48,3 +48,7 @@ jobs:
         with:
           name: hockey-calendars
           path: public/*.ics
+
+      - name: Show files
+        run: |
+           ls -lah publi
