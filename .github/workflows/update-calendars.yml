@@ -1,17 +1,54 @@
-name: Update Hockey Calendars
+name: Update hockey calendar
 
 on:
+  schedule:
+    # Viermaal per dag, in UTC.
+    # Bewust niet precies op het hele uur.
+    - cron: "17 3,9,15,21 * * *"
+
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: hockey-calendar-update
+  cancel-in-progress: false
+
 jobs:
-  build:
+  update-calendar:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate iCalendar file
+        run: python generate_calendar.py
+
+      - name: Check whether calendar changed
+        id: changes
+        run: |
+          if git diff --quiet -- docs/hockey.ics; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit updated calendar
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/hockey.ics
+          git commit -m "Update hockey calendar"
+          git push
