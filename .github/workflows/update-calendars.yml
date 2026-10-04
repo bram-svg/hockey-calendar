@@ -6,61 +6,66 @@ on:
     - cron: "0 */6 * * *"
 
 permissions:
-  contents* read
+  contents: read
   pages: write
-  id-token: w*ite
+  id-token: write
 
 concurrency:
   group: pages
- *cancel-in-progress: true
+  cancel-in-progress: true
 
 jobs:
-  *uild:
+  build:
     runs-on: ubuntu-latest
 
-*   steps:
-      - uses: actions/ch*ckout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-      - uses: actions/se*up-python@v5
+      - uses: actions/setup-python@v5
         with:
-       *  python-version: "3.12"
+          python-version: "3.12"
 
-      - *ame: Install dependencies
-        *un: |
-          pip install reques*s
-          pip install aiohttp
-  *       pip install pycryptodome
-  *       pip install icalendar
-     *    pip install python-dateutil
-
- *    - name: Download HockeyWeerelt*        run: |
-          curl -L \*            -o hockeyweerelt.py \
-*           https://raw.githubuserc*ntent.com/joosthoi1/HockeyWeerelt/*ain/hockeyweerelt.py
-
-      - name* Generate calendars
-        run: |*          python generate_calendar*.py
-
-      - name: Show generated *iles
+      - name: Install dependencies
         run: |
-          ls -*a public
+          pip install requests
+          pip install aiohttp
+          pip install pycryptodome
+          pip install icalendar
+          pip install python-dateutil
 
-      - name: Upload Pag*s artifact
-        uses: actions/u*load-pages-artifact@v3
-        wit*:
+      - name: Download HockeyWeerelt
+        run: |
+          curl -L \
+            -o hockeyweerelt.py \
+            https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
+
+      - name: Generate calendars
+        run: |
+          python generate_calendars.py
+
+      - name: Show generated files
+        run: |
+          ls -la
+          echo ""
+          ls -la public
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
           path: ./public
 
-  depl*y:
+  deploy:
     needs: build
 
-    permissio*s:
+    permissions:
       pages: write
-      id-tok*n: write
+      id-token: write
 
-    runs-on: ubuntu-late*t
+    runs-on: ubuntu-latest
 
     environment:
-      name: gi*hub-pages
+      name: github-pages
 
     steps:
-      - name* Deploy
-        uses: actions/depl*y-pages@v4
+      - name: Deploy
+        uses: actions/deploy-pages@v4
