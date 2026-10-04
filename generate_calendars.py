@@ -1,9 +1,8 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from icalendar import Calendar, Event
-
 from hockeyweerelt import Api
 
 OUTPUT_DIR = Path("public")
@@ -38,6 +37,7 @@ TEAMS = [
 
 def create_calendar(team_name, matches):
     cal = Calendar()
+
     cal.add("prodid", "-//Hockey Calendar//NL")
     cal.add("version", "2.0")
     cal.add("x-wr-calname", team_name)
@@ -60,34 +60,65 @@ def create_calendar(team_name, matches):
         home_name = home.get("name", "Unknown")
         away_name = away.get("name", "Unknown")
 
+        facility = (
+            match.get("location", {})
+            .get("facility", {})
+        )
+
+        field = (
+            match.get("location", {})
+            .get("field", {})
+        )
+
+        facility_name = facility.get("name", "")
+        address = facility.get("address", "")
+        field_name = field.get("name", "")
+
+        location_parts = []
+
+        if facility_name:
+            location_parts.append(facility_name)
+
+        if field_name:
+            location_parts.append(field_name)
+
+        if address:
+            location_parts.append(
+                address.replace("\n", ", ")
+            )
+
+        location = " - ".join(location_parts)
+
         ev = Event()
 
         ev.add(
             "uid",
-            f"{match.get('id', start.timestamp())}@hockey"
+            f"{match.get('id')}@hockey"
         )
 
-        location = match.get("accommodation", {})
-        location_name = ""
+        ev.add(
+            "summary",
+            f"{home_name} - {away_name}"
+        )
 
-        if isinstance(location, dict):
-            location_name = (
-              location.get("name")
-              or location.get("description")
-              or ""
-           )
-
-ev.add(
-    "summary",
-    f"{away_name} @ {location_name}"
-)
         ev.add("dtstart", start)
         ev.add("dtend", end)
 
         ev.add(
             "dtstamp",
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         )
+
+        if location:
+            ev.add("location", location)
+
+        description = (
+            f"Poule: {match.get('poule_name', '')}\n"
+            f"Locatie: {location}\n"
+            f"Duur: 2 uur"
+        )
+
+        ev.add("description", description)
 
         if match.get("status") == "cancelled":
             ev.add("status", "CANCELLED")
@@ -103,16 +134,14 @@ async def main():
 
     OUTPUT_DIR.mkdir(
         parents=True,
-        exist_ok=True,
+        exist_ok=True
     )
 
     async with await Api.create() as api:
 
         for team in TEAMS:
 
-            print(
-                f"Processing {team['name']}"
-            )
+            print(f"Processing {team['name']}")
 
             matches = await api.get_team_matches(
                 team["team_id"],
