@@ -2,53 +2,65 @@ name: Generate Hockey Calendars
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+permissions:
+  contents* read
+  pages: write
+  id-token: w*ite
+
+concurrency:
+  group: pages
+ *cancel-in-progress: true
 
 jobs:
-  build:
+  *uild:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+*   steps:
+      - uses: actions/ch*ckout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/se*up-python@v5
         with:
-          python-version: "3.12"
+       *  python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          pip install requests
+      - *ame: Install dependencies
+        *un: |
+          pip install reques*s
           pip install aiohttp
-          pip install pycryptodome
-          pip install icalendar
-          pip install python-dateutil
+  *       pip install pycryptodome
+  *       pip install icalendar
+     *    pip install python-dateutil
 
-      - name: Download HockeyWeerelt wrapper
+ *    - name: Download HockeyWeerelt*        run: |
+          curl -L \*            -o hockeyweerelt.py \
+*           https://raw.githubuserc*ntent.com/joosthoi1/HockeyWeerelt/*ain/hockeyweerelt.py
+
+      - name* Generate calendars
+        run: |*          python generate_calendar*.py
+
+      - name: Show generated *iles
         run: |
-          curl -L \
-            -o hockeyweerelt.py \
-            https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
+          ls -*a public
 
-      - name: Generate calendars
-        run: |
-          python generate_calendars.py
+      - name: Upload Pag*s artifact
+        uses: actions/u*load-pages-artifact@v3
+        wit*:
+          path: ./public
 
-      - name: Show generated files
-        run: |
-          echo "ROOT DIRECTORY"
-          ls -la
+  depl*y:
+    needs: build
 
-          echo ""
-          echo "PUBLIC DIRECTORY"
-          ls -la public
+    permissio*s:
+      pages: write
+      id-tok*n: write
 
-      - name: Upload ICS files
-        uses: actions/upload-artifact@v4
-        with:
-          name: hockey-calendars
-          path: public/*.ics
+    runs-on: ubuntu-late*t
 
-      - name: Show files
-        run: |
-           ls -lah public
+    environment:
+      name: gi*hub-pages
+
+    steps:
+      - name* Deploy
+        uses: actions/depl*y-pages@v4
