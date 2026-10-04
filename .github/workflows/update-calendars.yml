@@ -2,53 +2,51 @@ name: Update hockey calendars
 
 on:
   schedule:
-    - cron: "17 3,9,15,21 * * *"
-
+    - cron: '17 3,9,15,21 * * *'
   workflow_dispatch:
 
-permissio*s:
+permissions:
   contents: read
-  pages: write*  id-token: write
+  pages: write
+  id-token: write
 
 concurrency:
-  *roup: hockey-pages
-  cancel-in-pro*ress: false
+  group: hockey-pages
+  cancel-in-progress: false
 
 jobs:
-  build-and-pub*ish:
+  build-and-publish:
     runs-on: ubuntu-latest
-
- *  environment:
-      name: github-*ages
-      url: ${{ steps.deployme*t.outputs.page_url }}
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-*     - name: Checkout repository
- *      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
- *    - name: Set up Python
-        *ses: actions/setup-python@v5
-     *  with:
-          python-version: *3.12"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
           cache: pip
 
-      * name: Install dependencies
-      * run: pip install -r requirements.*xt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - name: Generate four ca*endar files
-        run: python ge*erate_calendars.py
+      - name: Generate four calendar files
+        run: python generate_calendars.py
 
-      - name: *how generated files
-        run: l* -la public
+      - name: Show generated files
+        run: ls -la public
 
-      - name: Configu*e GitHub Pages
-        uses: actio*s/configure-pages@v5
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-      - name* Upload GitHub Pages artifact
-    *   uses: actions/upload-pages-arti*act@v3
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          pat*: public
+          path: public
 
-      - name: Publish Gi*Hub Pages
+      - name: Publish GitHub Pages
         id: deployment
- *      uses: actions/deploy-pages@v*
+        uses: actions/deploy-pages@v4
