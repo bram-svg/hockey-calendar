@@ -1,27 +1,11 @@
-name: Update Hockey Calendars
+name: Inspect HockeyWeerelt
 
 on:
   workflow_dispatch:
 
-  schedule:
-    - cron: "17 3,9,15,21 * * *"
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: hockey-pages
-  cancel-in-progress: false
-
 jobs:
-  build-and-publish:
+  inspect:
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -31,25 +15,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install requests
+          pip install aiohttp
+          pip install pycryptodome
+          pip install icalendar
+          pip install python-dateutil
 
-      - name: Generate calendars
-        run: python generate_calendars.py
+      - name: Download HockeyWeerelt
+        run: |
+          curl -L \
+            -o hockeyweerelt.py \
+            https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
 
-      - name: Show generated files
-        run: ls -la public
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: public
-
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Show class Api
+        run: |
+          grep -A 250 "class Api" hockeyweerelt.py
