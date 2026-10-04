@@ -8,28 +8,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
+      - run: |
           pip install requests
           pip install aiohttp
           pip install pycryptodome
-          pip install icalendar
-          pip install python-dateutil
 
-      - name: Download HockeyWeerelt
-        run: |
+      - run: |
           curl -L \
             -o hockeyweerelt.py \
             https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
 
-      - name: Show class Api
-        run: |
-          grep -A 250 "class Api" hockeyweerelt.py
+      - run: |
+          grep -A 200 "class Api" hockeyweerelt.py
