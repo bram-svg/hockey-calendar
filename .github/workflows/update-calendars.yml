@@ -18,6 +18,8 @@ jobs:
           pip install requests
           pip install aiohttp
           pip install pycryptodome
+          pip install icalendar
+          pip install python-dateutil
 
       - run: |
           curl -L \
