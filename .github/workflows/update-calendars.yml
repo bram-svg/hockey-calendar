@@ -1,8 +1,39 @@
-- name: Inspect HockeyWeerelt wrapper
-  run: |
-    python <<'PY'
-    import hockeyweerelt
+name: Inspect HockeyWeerelt
 
-    print("Module geladen")
-    print(dir(hockeyweerelt))
-    PY
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+          pip install aiohttp
+          pip install icalendar
+          pip install python-dateutil
+
+      - name: Download wrapper
+        run: |
+          curl -L \
+            -o hockeyweerelt.py \
+            https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
+
+      - name: Show wrapper info
+        run: |
+          python <<'PY'
+          import hockeyweerelt
+
+          print("MODULE GELADEN")
+          print(dir(hockeyweerelt))
+          PY
