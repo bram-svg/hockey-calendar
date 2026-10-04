@@ -67,11 +67,20 @@ def create_calendar(team_name, matches):
             f"{match.get('id', start.timestamp())}@hockey"
         )
 
-        ev.add(
-            "summary",
-            f"{home_name} - {away_name}"
-        )
+        location = match.get("accommodation", {})
+        location_name = ""
 
+        if isinstance(location, dict):
+            location_name = (
+              location.get("name")
+              or location.get("description")
+              or ""
+           )
+
+ev.add(
+    "summary",
+    f"{away_name} @ {location_name}"
+)
         ev.add("dtstart", start)
         ev.add("dtend", end)
 
