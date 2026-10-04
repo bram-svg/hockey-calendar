@@ -197,7 +197,6 @@ def create_calendar(team, matches):
         uid = get_match_uid(
             match=match,
             team_id=team["team_id"],
-            team["poule_id"],
             start=start,
             home_team=home_team,
             away_team=away_team,
