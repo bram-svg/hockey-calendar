@@ -120,8 +120,8 @@ def fetch_matches(team_id):
     """Retrieve upcoming matches for one team."""
     url = API_URL.format(team_id=team_id)
 
-print(f"Wedstrijden ophalen voor team {team_id}")
-print(f"API-url: {url}"))
+    print(f"Wedstrijden ophalen voor team {team_id}")
+    print(f"API-url: {url}")
 
     response = requests.get(
         url,
