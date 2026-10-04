@@ -1,11 +1,27 @@
-name: Inspect HockeyWeerelt
+name: Update Hockey Calendars
 
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: "17 3,9,15,21 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: hockey-pages
+  cancel-in-progress: false
+
 jobs:
-  inspect:
+  build-and-publish:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -15,41 +31,25 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
-        run: |
-          pip install requests
-          pip install aiohttp
-          pip install icalendar
-          pip install python-dateutil
-          pip install pycryptodome
+        run: pip install -r requirements.txt
 
-      - name: Download HockeyWeerelt wrapper
-        run: |
-          curl -L \
-            -o hockeyweerelt.py \
-            https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
+      - name: Generate calendars
+        run: python generate_calendars.py
 
-      - name: Verify wrapper
-        run: |
-          ls -la hockeyweerelt.py
+      - name: Show generated files
+        run: ls -la public
 
-      - name: Inspect Api class
-        run: |
-          python <<'PY'
-          import hockeyweerelt
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-          print("MODULE GELADEN")
-          print()
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
 
-          print("API CLASS")
-          print(hockeyweerelt.Api)
-          print()
-
-          print("API ATTRIBUTEN")
-          print(dir(hockeyweerelt.Api))
-          PY
-
-      - name: Show Api source
-        run: |
-          grep -A 200 "class Api" hockeyweerelt.py
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
