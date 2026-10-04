@@ -127,6 +127,13 @@ def fetch_matches(team_id):
         url,
         headers=HEADERS,
         timeout=30,
+        allow_redirects=False,
+    )
+
+    print(f"HTTP-status: {response.status_code}")
+    print(
+        "Redirect-locatie: "
+        f"{response.headers.get('location', 'geen')}"
     )
 
     response.raise_for_status()
