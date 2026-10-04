@@ -6,3 +6,4 @@ import hockeyweerelt
 print("Module geladen")
 print(dir(hockeyweerelt))
 PY
+``
