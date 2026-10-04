@@ -33,7 +33,7 @@ TEAMS = [
 
 API_URL = (
     "https://publicaties.hockeyweerelt.nl/"
-    "mc/teams/{team_id}/matches/upcoming"
+    "mc/teams/{team_id}/matches/upcoming?show_all=0"
 )
 
 OUTPUT_DIRECTORY = Path("public")
