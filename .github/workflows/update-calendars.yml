@@ -30,3 +30,12 @@ jobs:
       - name: Run test
         run: |
           python generate_calendars.py
+    
+      - name: Install calendar packages
+        run: |
+          pip install icalendar
+          pip install python-dateutil
+
+      - name: Generate calendar
+        run: |
+          python generate_calendars.py
