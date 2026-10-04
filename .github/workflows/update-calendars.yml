@@ -1,48 +1,50 @@
-name: Inspect HockeyWeerelt
+name: Generate Hockey Calendars
 
 on:
   workflow_dispatch:
 
 jobs:
-  inspect:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - run: |
+      - name: Install dependencies
+        run: |
           pip install requests
           pip install aiohttp
           pip install pycryptodome
           pip install icalendar
           pip install python-dateutil
 
-      - run: |
+      - name: Download HockeyWeerelt wrapper
+        run: |
           curl -L \
             -o hockeyweerelt.py \
             https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
 
-      - run: |
-          grep -A 200 "class Api" hockeyweerelt.py
-
-      - name: Run test
-        run: |
-          python generate_calendars.py
-    
-      - name: Install calendar packages
-        run: |
-          pip install icalendar
-          pip install python-dateutil
-
-      - name: Generate calendar
+      - name: Generate calendars
         run: |
           python generate_calendars.py
 
       - name: Show generated files
         run: |
-         ls -la
-         ls -la public
+          echo "ROOT DIRECTORY"
+          ls -la
+
+          echo ""
+          echo "PUBLIC DIRECTORY"
+          ls -la public
+
+      - name: Upload ICS files
+        uses: actions/upload-artifact@v4
+        with:
+          name: hockey-calendars
+          path: public/*.ics
