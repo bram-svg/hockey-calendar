@@ -116,48 +116,23 @@ def get_match_uid(match, team_id, start, home_team, away_team):
     return f"hockey-{digest[:24]}@hockey-calendars"
 
 
-def fetch_matches(team_id):
-    """Retrieve upcoming matches for one team."""
-    url = API_URL.format(team_id=team_id)
+def fetch_matches(team_id, poule_id):
+    url = f"https://app.hockeyweerelt.nl/poules/{poule_id}/teams/{team_id}"
 
-    print(f"Wedstrijden ophalen voor team {team_id}")
-    print(f"API-url: {url}")
+    print(url)
 
     response = requests.get(
         url,
-        headers=HEADERS,
+        headers={"Accept": "application/json"},
         timeout=30,
-        allow_redirects=False,
     )
 
-    print(f"HTTP-status: {response.status_code}")
-    print(
-        "Redirect-locatie: "
-        f"{response.headers.get('location', 'geen')}"
-    )
+    print(response.status_code)
+    print(response.headers.get("content-type"))
 
-    response.raise_for_status()
+    print(response.text[:1000])
 
-    payload = response.json()
-
-    if isinstance(payload, dict):
-        matches = payload.get("data", [])
-    elif isinstance(payload, list):
-        matches = payload
-    else:
-        matches = []
-
-    if not isinstance(matches, list):
-        raise RuntimeError(
-            f"Onverwacht antwoord voor team {team_id}"
-        )
-
-    print(
-        f"{len(matches)} aankomende wedstrijden gevonden "
-        f"voor team {team_id}"
-    )
-
-    return matches
+    return []
 
 
 def create_calendar(team, matches):
