@@ -26,3 +26,7 @@ jobs:
 
       - run: |
           grep -A 200 "class Api" hockeyweerelt.py
+
+      - name: Run test
+        run: |
+          python generate_calendars.py
