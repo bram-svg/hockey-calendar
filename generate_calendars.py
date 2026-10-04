@@ -10,22 +10,22 @@ from icalendar import Calendar, Event
 # De vier team-ID's uit de Hockey.nl-links.
 TEAMS = [
     {
-        "team_id": 42637,
+        "team_id": 42637, "poule_id": 183108,
         "calendar_name": "Hockey team 42637",
         "filename": "team-42637.ics",
     },
     {
-        "team_id": 6344,
+        "team_id": 6344, "poule_id": 182127,
         "calendar_name": "Hockey team 6344",
         "filename": "team-6344.ics",
     },
     {
-        "team_id": 46147,
+        "team_id": 46147, "poule_id": 182243,
         "calendar_name": "Hockey team 46147",
         "filename": "team-46147.ics",
     },
     {
-        "team_id": 39358,
+        "team_id": 39358, "poule_id": 182090,
         "calendar_name": "Hockey team 39358",
         "filename": "team-39358.ics",
     },
@@ -197,6 +197,7 @@ def create_calendar(team, matches):
         uid = get_match_uid(
             match=match,
             team_id=team["team_id"],
+            team["poule_id"],
             start=start,
             home_team=home_team,
             away_team=away_team,
