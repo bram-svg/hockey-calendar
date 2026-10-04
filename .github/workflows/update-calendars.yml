@@ -1,8 +1,9 @@
 - name: Inspect HockeyWeerelt wrapper
   run: |
+    pip install hockeyweerelt
     python - <<'PY'
     import hockeyweerelt
-
+    
     print("Module geladen")
     print(dir(hockeyweerelt))
     PY
