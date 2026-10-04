@@ -304,20 +304,24 @@ def main():
     results = []
 
     for team in TEAMS:
-        matches = fetch_matches(team["team_id"])
 
-        calendar, events_added = create_calendar(
-            team,
-            matches,
-        )
+    matches = fetch_matches(
+        team["team_id"],
+        team["poule_id"]
+    )
 
-        output_file = (
-            OUTPUT_DIRECTORY / team["filename"]
-        )
+    calendar, events_added = create_calendar(
+        team,
+        matches,
+    )
 
-        output_file.write_bytes(
-            calendar.to_ical()
-        )
+    output_file = (
+        OUTPUT_DIRECTORY / team["filename"]
+    )
+
+    output_file.write_bytes(
+        calendar.to_ical()
+    )
 
         results.append(
             {
