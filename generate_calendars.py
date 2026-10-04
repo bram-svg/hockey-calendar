@@ -132,12 +132,14 @@ def get_location(match):
         parts.append(location)
 
     elif isinstance(location, dict):
-        for keys in [
+        location_key_groups = [
             ["name", "description", "title"],
             ["address", "street"],
             ["postal_code", "postalCode", "zipcode"],
             ["city", "place"],
-        \]:
+        ]
+
+        for keys in location_key_groups:
             value = first_value(location, keys)
 
             if value:
@@ -146,4 +148,30 @@ def get_location(match):
     field = first_value(
         match,
         [
-        
+            "field",
+            "field_number",
+            "fieldNumber",
+            "pitch",
+        ],
+    )
+
+    if isinstance(field, dict):
+        field = object_name(field, default="")
+
+    if field:
+        field_text = str(field).strip()
+
+        if not field_text.lower().startswith("veld"):
+            field_text = f"Veld {field_text}"
+
+        parts.append(field_text)
+
+    unique_parts = []
+
+    for part in parts:
+        cleaned = str(part).strip()
+
+        if cleaned and cleaned not in unique_parts:
+            unique_parts.append(cleaned)
+
+    return ", ".join(unique_parts)
