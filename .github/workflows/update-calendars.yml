@@ -1,54 +1,54 @@
-name: Update hockey calendar
+name: Update hockey calendars
 
 on:
   schedule:
-    # Viermaal per dag, in UTC.
-    # Bewust niet precies op het hele uur.
     - cron: "17 3,9,15,21 * * *"
 
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissio*s:
+  contents: read
+  pages: write*  id-token: write
 
 concurrency:
-  group: hockey-calendar-update
-  cancel-in-progress: false
+  *roup: hockey-pages
+  cancel-in-pro*ress: false
 
 jobs:
-  update-calendar:
+  build-and-pub*ish:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+ *  environment:
+      name: github-*ages
+      url: ${{ steps.deployme*t.outputs.page_url }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+    steps:
+*     - name: Checkout repository
+ *      uses: actions/checkout@v4
+
+ *    - name: Set up Python
+        *ses: actions/setup-python@v5
+     *  with:
+          python-version: *3.12"
           cache: pip
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      * name: Install dependencies
+      * run: pip install -r requirements.*xt
 
-      - name: Generate iCalendar file
-        run: python generate_calendar.py
+      - name: Generate four ca*endar files
+        run: python ge*erate_calendars.py
 
-      - name: Check whether calendar changed
-        id: changes
-        run: |
-          if git diff --quiet -- docs/hockey.ics; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
+      - name: *how generated files
+        run: l* -la public
 
-      - name: Commit updated calendar
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/hockey.ics
-          git commit -m "Update hockey calendar"
-          git push
+      - name: Configu*e GitHub Pages
+        uses: actio*s/configure-pages@v5
+
+      - name* Upload GitHub Pages artifact
+    *   uses: actions/upload-pages-arti*act@v3
+        with:
+          pat*: public
+
+      - name: Publish Gi*Hub Pages
+        id: deployment
+ *      uses: actions/deploy-pages@v*
