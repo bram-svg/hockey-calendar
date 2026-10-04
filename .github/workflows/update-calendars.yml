@@ -1,37 +1,8 @@
-name: Test HockeyWeerelt Wrapper
-
-on:
-  workflow_dispatch:
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Download HockeyWeerelt wrapper
-        run: |
-          curl --fail --location \
-            --output hockeyweerelt.py \
-            "https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py"
-
-      - name: Check downloaded wrapper
-        run: |
-          ls -la hockeyweerelt.py
-          python -m py_compile hockeyweerelt.py
-          python - <<'PY'
-          import hockeyweerelt
-          print("Wrapper succesvol geladen")
-          print("Beschikbare onderdelen:")
-          print(dir(hockeyweerelt))
-          PY
+- name: Inspect HockeyWeerelt wrapper
+run: |
+python - <<'PY'
+import hockeyweerelt
+ 
+print("Module geladen")
+print(dir(hockeyweerelt))
+PY
