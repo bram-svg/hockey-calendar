@@ -51,4 +51,4 @@ jobs:
 
       - name: Show files
         run: |
-           ls -lah publi
+           ls -lah public
