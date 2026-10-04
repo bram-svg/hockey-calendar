@@ -41,8 +41,3 @@ jobs:
       - name: Generate calendar
         run: |
           python generate_calendars.py
-
-        - name: Show generated files
-          run: |
-            ls -la
-            ls -la public
