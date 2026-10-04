@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -22,18 +22,34 @@ jobs:
           pip install aiohttp
           pip install icalendar
           pip install python-dateutil
+          pip install pycryptodome
 
-      - name: Download wrapper
+      - name: Download HockeyWeerelt wrapper
         run: |
           curl -L \
             -o hockeyweerelt.py \
             https://raw.githubusercontent.com/joosthoi1/HockeyWeerelt/main/hockeyweerelt.py
 
-      - name: Show wrapper info
+      - name: Verify wrapper
+        run: |
+          ls -la hockeyweerelt.py
+
+      - name: Inspect Api class
         run: |
           python <<'PY'
           import hockeyweerelt
 
           print("MODULE GELADEN")
-          print(dir(hockeyweerelt))
+          print()
+
+          print("API CLASS")
+          print(hockeyweerelt.Api)
+          print()
+
+          print("API ATTRIBUTEN")
+          print(dir(hockeyweerelt.Api))
           PY
+
+      - name: Show Api source
+        run: |
+          grep -A 200 "class Api" hockeyweerelt.py
