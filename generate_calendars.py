@@ -10,9 +10,9 @@ OUTPUT_DIR = Path("public")
 
 TEAMS = [
     {
-        "team_id": 42637,
-        "name": "Team C",
-        "file": "team-C.ics",
+        "team_id": 39358,
+        "name": "Team L",
+        "file": "team-L.ics",
     },
     {
         "team_id": 6344,
@@ -25,9 +25,9 @@ TEAMS = [
         "file": "team-F.ics",
     },
     {
-        "team_id": 39358,
-        "name": "Team L",
-        "file": "team-L.ics",
+        "team_id": 42637,
+        "name": "Team C",
+        "file": "team-C.ics",
     },
     {
         "team_id": 39358,
