@@ -219,37 +219,38 @@ def create_calendar(team, matches):
 
 def create_index_page(results):
     """Create a simple page with links to the calendars."""
+
     links = []
 
     for result in results:
         links.append(
-            "        <li>"
-            f'{result['
-            f'{result["name"]}</a>'
-            f' ({result["events"]} wedstrijden)'
-            "</li>"
+            f'<li>{result['
+            f'{result["name"]}</a> '
+            f'({result["events"]} wedstrijden)</li>'
         )
 
-    page = "\n".join(
-        [
-            "<!doctype html>",
-            '<html lang="nl">',
-            "<head>",
-            '    <meta charset="utf-8">',
-            "    <meta name=\"viewport\" "
-            'content="width=device-width, initial-scale=1">',
-            "    <title>Hockeyagenda's</title>",
-            "</head>",
-            "<body>",
-            "    <h1>Hockeyagenda's</h1>",
-            "    <p>Kies een team:</p>",
-            "    <ul>",
-            *links,
-            "    </ul>",
-            "</body>",
-            "</html>",
-        ]
-    )
+    page = f"""<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <title>Hockeyagenda's</title>
+</head>
+
+<body>
+    <h1>Hockeyagenda's</h1>
+
+    <p>Kies een team:</p>
+
+    <ul>
+        {''.join(links)}
+    </ul>
+</body>
+</html>
+"""
 
     index_file = OUTPUT_DIR / "index.html"
 
@@ -257,7 +258,6 @@ def create_index_page(results):
         page,
         encoding="utf-8",
     )
-
 
 async def main():
     OUTPUT_DIR.mkdir(
