@@ -26,6 +26,11 @@ TEAMS = [
     },
     {
         "team_id": 39358,
+        "name": "Team L",
+        "file": "team-L.ics",
+    },
+    {
+        "team_id": 39358,
         "name": "Team GL",
         "file": "team-GL.ics",
     },
