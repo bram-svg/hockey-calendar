@@ -29,8 +29,13 @@ TEAMS = [
     {
         "team_id": 39358,
         "poule_id": 183221,
-        "name": "Team GL",
-        "file": "team-GL.ics",
+        "name": "Team G",
+        "file": "team-G.ics",
+    },
+    {
+        "team_id": 39358,
+        "name": "Team L",
+        "file": "team-L.ics",
     },
 ]
 
@@ -145,7 +150,6 @@ async def main():
 
             matches = await api.get_team_matches(
                 team["team_id"],
-                team["poule_id"],
             )
 
             print(
