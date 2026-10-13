@@ -5,6 +5,10 @@ from pathlib import Path
 from icalendar import Calendar, Event
 from hockeyweerelt import Api
 
+from zoneinfo import ZoneInfo
+
+AMSTERDAM = ZoneInfo("Europe/Amsterdam")
+
 
 OUTPUT_DIR = Path("public")
 
@@ -43,6 +47,11 @@ def parse_match_date(match):
         return datetime.fromisoformat(
             str(match_date).replace("Z", "+00:00")
         )
+
+        # Zorg expliciet voor Nederlandse lokale tijd
+        start = start.astimezone(AMSTERDAM)
+
+        end = start + timedelta(hours=2)        
     except ValueError:
         print(f"Ongeldige datum overgeslagen: {match_date}")
         return None
