@@ -465,7 +465,6 @@ def verify_calendar_timezone(output_file):
         for line in event_lines[:4]:
             print(f"  {line}")
 
-
 async def main():
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -474,52 +473,53 @@ async def main():
 
     results = []
 
-    # Dubbele team-ID's worden verwijderd.
-    # Team L en Team GL gebruiken daardoor dezelfde
-    # opgehaalde wedstrijdgegevens.
-    unique_team_ids = list(
-        dict.fromkeys(
-            team["team_id"]
-            for team in TEAMS
-        )
-    )
+    # Cache voorkomt dubbele API-calls.
+    # Team L en Team GL gebruiken hetzelfde team-ID.
+    matches_cache = {}
 
     print("HockeyWeerelt API initialiseren")
-    print(
-        f"Unieke team-ID's: {unique_team_ids}"
-    )
 
     async with await Api.create() as api:
         print("API succesvol geïnitialiseerd")
-        print("Wedstrijden ophalen")
-
-        # Eén gecombineerde API-aanvraag beperkt
-        # het risico op een 429 Too Many Requests.
-        all_matches = (
-            await api.get_matches_for_teams(
-                unique_team_ids
-            )
-        )
-
-        print(
-            f"{len(all_matches)} wedstrijden ontvangen"
-        )
 
         for team in TEAMS:
+            team_id = team["team_id"]
+
             print("")
             print("=" * 60)
-            print(
-                f"Team verwerken: {team['name']}"
-            )
-            print(
-                f"Team-ID: {team['team_id']}"
-            )
+            print(f"Team verwerken: {team['name']}")
+            print(f"Team-ID: {team_id}")
 
-            calendar, events_added = (
-                create_calendar(
-                    team,
-                    all_matches,
+            if team_id in matches_cache:
+                print(
+                    "Wedstrijden uit cache gebruiken."
                 )
+
+                matches = matches_cache[team_id]
+
+            else:
+                print(
+                    "Wedstrijden ophalen bij HockeyWeerelt..."
+                )
+
+                matches = (
+                    await api.get_matches_for_teams(
+                        [team_id]
+                    )
+                )
+
+                matches_cache[team_id] = matches
+
+                print(
+                    f"{len(matches)} wedstrijden ontvangen"
+                )
+
+                # Voorkom te veel API-requests vlak achter elkaar.
+                await asyncio.sleep(3)
+
+            calendar, events_added = create_calendar(
+                team,
+                matches,
             )
 
             output_file = (
