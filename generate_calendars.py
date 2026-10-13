@@ -216,37 +216,44 @@ def create_calendar(team, matches):
 
     return calendar, events_added
 
-
 def create_index_page(results):
     """Create a simple page with links to the calendars."""
 
     links = []
 
     for result in results:
-        links.append(
-            f'<li>{result['
-            f'{result["name"]}</a> '
-            f'({result["events"]} wedstrijden)</li>'
+        filename = result["file"]
+        name = result["name"]
+        events = result["events"]
+
+        link = (
+            '<li>'
+            + filename
+            + ''
+            + name
+            + "</a> ("
+            + str(events)
+            + " wedstrijden)</li>"
         )
 
-    page = f"""<!doctype html>
+        links.append(link)
+
+    page = """<!doctype html>
 <html lang="nl">
 <head>
     <meta charset="utf-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hockeyagenda's</title>
 </head>
-
 <body>
     <h1>Hockeyagenda's</h1>
-
     <p>Kies een team:</p>
-
     <ul>
-        {''.join(links)}
+"""
+
+    page += "\n".join(links)
+
+    page += """
     </ul>
 </body>
 </html>
