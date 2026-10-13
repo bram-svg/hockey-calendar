@@ -278,7 +278,7 @@ def create_calendar(team, matches):
             team["team_id"],
         )
 
-        short_location, full_location = (
+        short_location, full_location, city = (
             get_location(match)
         )
 
