@@ -16,19 +16,19 @@ TEAMS = [
     },
     {
         "team_id": 6344,
-        "poule_id": 182127,
+        "poule_id": 183266,
         "name": "Team N",
         "file": "team-N.ics",
     },
     {
         "team_id": 46147,
-        "poule_id": 182243,
+        "poule_id": 183367,
         "name": "Team F",
         "file": "team-F.ics",
     },
     {
         "team_id": 39358,
-        "poule_id": 182090,
+        "poule_id": 183221,
         "name": "Team GL",
         "file": "team-GL.ics",
     },
