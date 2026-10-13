@@ -127,10 +127,10 @@ def get_opponent(match, team_id):
 
 def get_location(match):
     """
-    Return a short and full location.
-
-    Short location is used in the subject.
-    Full location is used in the ICS LOCATION field.
+    Return:
+    1. Short location for the subject
+    2. Full location for the LOCATION field
+    3. City for the subject
     """
     location = match.get("location") or {}
     facility = location.get("facility") or {}
@@ -147,6 +147,23 @@ def get_location(match):
     address = str(
         facility.get("address", "")
     ).strip()
+
+    # Stad uit laatste deel van het adres halen.
+    # Bijvoorbeeld:
+    # Jan Beijerpad 1
+    # 1087BX Amsterdam
+    # -> Amsterdam
+    city = ""
+
+    if address:
+        address_lines = address.splitlines()
+
+        if address_lines:
+            last_line = address_lines[-1].strip()
+            parts = last_line.split(maxsplit=1)
+
+            if len(parts) == 2:
+                city = parts[1]
 
     short_parts = []
 
@@ -170,8 +187,7 @@ def get_location(match):
 
     full_location = ", ".join(full_parts)
 
-    return short_location, full_location
-
+    return short_location, full_location, city
 
 def create_event_uid(match, team_id, start):
     """Create a stable identifier for a calendar event."""
