@@ -35,8 +35,8 @@ TEAMS = [
     },
     {
         "team_id": 39358,
-        "name": "Team GL",
-        "file": "team-GL.ics",
+        "name": "Team G",
+        "file": "team-G.ics",
     },
 ]
 
