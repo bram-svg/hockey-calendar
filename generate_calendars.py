@@ -43,10 +43,15 @@ TEAMS = [
 
 def parse_match_date(match):
     """
-    Convert the Hockey.nl date to Dutch local time.
+    Convert the Hockey.nl date to Europe/Amsterdam.
 
-    Example input:
-    2026-09-04T20:30:00+02:00
+    The clock time supplied by Hockey.nl is preserved.
+
+    Example:
+    2026-10-23T20:30:00+02:00
+
+    becomes:
+    2026-10-23 20:30:00 Europe/Amsterdam
     """
     match_date = match.get("date")
 
@@ -54,30 +59,34 @@ def parse_match_date(match):
         return None
 
     try:
-        start = datetime.fromisoformat(
+        original = datetime.fromisoformat(
             str(match_date).replace("Z", "+00:00")
         )
-    except ValueError:
+    except (ValueError, TypeError):
         print(
-            f"Wedstrijd overgeslagen vanwege "
+            "Wedstrijd overgeslagen vanwege "
             f"ongeldige datum: {match_date}"
         )
         return None
 
-    if start.tzinfo is None:
-        start = start.replace(
-            tzinfo=AMSTERDAM_TIMEZONE
-        )
-    else:
-        start = start.astimezone(
-            AMSTERDAM_TIMEZONE
-        )
+    # Maak bewust een nieuwe datetime aan met de IANA-tijdzone
+    # Europe/Amsterdam. Hiermee voorkomen we TZID="UTC+02:00".
+    start = datetime(
+        year=original.year,
+        month=original.month,
+        day=original.day,
+        hour=original.hour,
+        minute=original.minute,
+        second=original.second,
+        microsecond=original.microsecond,
+        tzinfo=AMSTERDAM_TIMEZONE,
+    )
 
     return start
 
 
 def match_involves_team(match, team_id):
-    """Check whether the selected team plays in this match."""
+    """Check whether the selected team plays in the match."""
     home = match.get("home") or {}
     away = match.get("away") or {}
 
@@ -118,10 +127,10 @@ def get_opponent(match, team_id):
 
 def get_location(match):
     """
-    Return two location strings:
+    Return a short and full location.
 
-    1. Short location for the calendar subject.
-    2. Full location for the ICS location field.
+    Short location is used in the subject.
+    Full location is used in the ICS LOCATION field.
     """
     location = match.get("location") or {}
     facility = location.get("facility") or {}
@@ -165,7 +174,7 @@ def get_location(match):
 
 
 def create_event_uid(match, team_id, start):
-    """Create a stable unique identifier for the event."""
+    """Create a stable identifier for a calendar event."""
     match_id = match.get("id")
 
     if match_id is not None:
@@ -245,7 +254,7 @@ def create_calendar(team, matches):
         if match_id is not None:
             seen_match_ids.add(match_id)
 
-        # Standaard wedstrijdduur van twee uur.
+        # Standaard wedstrijdduur: twee uur.
         end = start + timedelta(hours=2)
 
         opponent = get_opponent(
@@ -277,8 +286,8 @@ def create_calendar(team, matches):
 
         event.add("summary", summary)
 
-        # De datums hebben expliciet de tijdzone
-        # Europe/Amsterdam.
+        # Beide waarden hebben expliciet ZoneInfo
+        # met de naam Europe/Amsterdam.
         event.add("dtstart", start)
         event.add("dtend", end)
 
@@ -337,7 +346,7 @@ def create_index_page(results):
 
         link = (
             "<li>"
-            f'{name}</a> '
+            f'{filename}{name}</a> '
             f"({events} wedstrijden)"
             "</li>"
         )
@@ -415,6 +424,48 @@ def create_index_page(results):
     )
 
 
+def verify_calendar_timezone(output_file):
+    """
+    Verify that the output does not contain fixed-offset TZIDs.
+
+    The workflow stops if UTC+01:00 or UTC+02:00 is found.
+    """
+    content = output_file.read_text(
+        encoding="utf-8",
+    )
+
+    invalid_values = [
+        'TZID="UTC+01:00"',
+        'TZID="UTC+02:00"',
+        "TZID=UTC+01:00",
+        "TZID=UTC+02:00",
+    ]
+
+    for invalid_value in invalid_values:
+        if invalid_value in content:
+            raise RuntimeError(
+                f"Verkeerde tijdzone gevonden in "
+                f"{output_file}: {invalid_value}"
+            )
+
+    event_lines = [
+        line
+        for line in content.splitlines()
+        if (
+            line.startswith("DTSTART")
+            or line.startswith("DTEND")
+        )
+    ]
+
+    if event_lines:
+        print(
+            f"Tijdzonecontrole voor {output_file}:"
+        )
+
+        for line in event_lines[:4]:
+            print(f"  {line}")
+
+
 async def main():
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -423,9 +474,9 @@ async def main():
 
     results = []
 
-    # Unieke team-ID's verzamelen.
-    # Team L en Team GL hebben hetzelfde team-ID,
-    # dus dit team wordt maar één keer opgehaald.
+    # Dubbele team-ID's worden verwijderd.
+    # Team L en Team GL gebruiken daardoor dezelfde
+    # opgehaalde wedstrijdgegevens.
     unique_team_ids = list(
         dict.fromkeys(
             team["team_id"]
@@ -440,12 +491,10 @@ async def main():
 
     async with await Api.create() as api:
         print("API succesvol geïnitialiseerd")
-
-        # Eén gecombineerde API-aanvraag voor alle
-        # unieke teams. Dit beperkt de kans op een
-        # 429 Too Many Requests-fout.
         print("Wedstrijden ophalen")
 
+        # Eén gecombineerde API-aanvraag beperkt
+        # het risico op een 429 Too Many Requests.
         all_matches = (
             await api.get_matches_for_teams(
                 unique_team_ids
@@ -453,8 +502,7 @@ async def main():
         )
 
         print(
-            f"{len(all_matches)} wedstrijden "
-            f"ontvangen"
+            f"{len(all_matches)} wedstrijden ontvangen"
         )
 
         for team in TEAMS:
@@ -480,6 +528,10 @@ async def main():
 
             output_file.write_bytes(
                 calendar.to_ical()
+            )
+
+            verify_calendar_timezone(
+                output_file
             )
 
             results.append(
