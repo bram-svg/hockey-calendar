@@ -1,18 +1,23 @@
 import asyncio
+import html
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
-from icalendar import Calendar, Event
-from hockeyweerelt import Api
-
 from zoneinfo import ZoneInfo
 
-AMSTERDAM = ZoneInfo("Europe/Amsterdam")
+from hockeyweerelt import Api
+from icalendar import Calendar, Event
 
 
 OUTPUT_DIR = Path("public")
+AMSTERDAM_TIMEZONE = ZoneInfo("Europe/Amsterdam")
+
 
 TEAMS = [
+    {
+        "team_id": 42637,
+        "name": "Team C",
+        "file": "team-C.ics",
+    },
     {
         "team_id": 6344,
         "name": "Team N",
@@ -24,9 +29,9 @@ TEAMS = [
         "file": "team-F.ics",
     },
     {
-        "team_id": 42637,
-        "name": "Team C",
-        "file": "team-C.ics",
+        "team_id": 39358,
+        "name": "Team L",
+        "file": "team-L.ics",
     },
     {
         "team_id": 39358,
@@ -37,36 +42,70 @@ TEAMS = [
 
 
 def parse_match_date(match):
-    """Convert the Hockey.nl date to a Python datetime."""
+    """
+    Convert the Hockey.nl date to Dutch local time.
+
+    Example input:
+    2026-09-04T20:30:00+02:00
+    """
     match_date = match.get("date")
 
     if not match_date:
         return None
 
     try:
-        return datetime.fromisoformat(
+        start = datetime.fromisoformat(
             str(match_date).replace("Z", "+00:00")
         )
-
-        # Zorg expliciet voor Nederlandse lokale tijd
-        start = start.astimezone(AMSTERDAM)
-
-        end = start + timedelta(hours=2)        
     except ValueError:
-        print(f"Ongeldige datum overgeslagen: {match_date}")
+        print(
+            f"Wedstrijd overgeslagen vanwege "
+            f"ongeldige datum: {match_date}"
+        )
         return None
 
+    if start.tzinfo is None:
+        start = start.replace(
+            tzinfo=AMSTERDAM_TIMEZONE
+        )
+    else:
+        start = start.astimezone(
+            AMSTERDAM_TIMEZONE
+        )
 
-def get_opponent(match, team_id):
-    """Determine the opponent based on the current team ID."""
+    return start
+
+
+def match_involves_team(match, team_id):
+    """Check whether the selected team plays in this match."""
     home = match.get("home") or {}
     away = match.get("away") or {}
 
     home_id = home.get("id")
     away_id = away.get("id")
 
-    home_name = home.get("name", "Onbekend team")
-    away_name = away.get("name", "Onbekend team")
+    return (
+        str(home_id) == str(team_id)
+        or str(away_id) == str(team_id)
+    )
+
+
+def get_opponent(match, team_id):
+    """Return the opponent of the selected team."""
+    home = match.get("home") or {}
+    away = match.get("away") or {}
+
+    home_id = home.get("id")
+    away_id = away.get("id")
+
+    home_name = home.get(
+        "name",
+        "Onbekend team",
+    )
+    away_name = away.get(
+        "name",
+        "Onbekend team",
+    )
 
     if str(home_id) == str(team_id):
         return away_name
@@ -78,42 +117,71 @@ def get_opponent(match, team_id):
 
 
 def get_location(match):
-    """Return location and field as one readable string."""
+    """
+    Return two location strings:
+
+    1. Short location for the calendar subject.
+    2. Full location for the ICS location field.
+    """
     location = match.get("location") or {}
     facility = location.get("facility") or {}
     field = location.get("field") or {}
 
-    facility_name = facility.get("name", "")
-    field_name = field.get("name", "")
-    address = facility.get("address", "")
+    facility_name = str(
+        facility.get("name", "")
+    ).strip()
 
-    subject_parts = []
+    field_name = str(
+        field.get("name", "")
+    ).strip()
+
+    address = str(
+        facility.get("address", "")
+    ).strip()
+
+    short_parts = []
 
     if facility_name:
-        subject_parts.append(str(facility_name))
+        short_parts.append(facility_name)
 
     if field_name:
-        subject_parts.append(str(field_name))
+        short_parts.append(field_name)
 
-    subject_location = " - ".join(subject_parts)
+    short_location = " - ".join(short_parts)
 
-    calendar_parts = []
+    full_parts = []
 
-    if subject_location:
-        calendar_parts.append(subject_location)
+    if short_location:
+        full_parts.append(short_location)
 
     if address:
-        calendar_parts.append(
-            str(address).replace("\n", ", ")
+        full_parts.append(
+            address.replace("\n", ", ")
         )
 
-    full_location = ", ".join(calendar_parts)
+    full_location = ", ".join(full_parts)
 
-    return subject_location, full_location
+    return short_location, full_location
+
+
+def create_event_uid(match, team_id, start):
+    """Create a stable unique identifier for the event."""
+    match_id = match.get("id")
+
+    if match_id is not None:
+        return (
+            f"hockey-{match_id}-"
+            f"{team_id}@hockey-calendar"
+        )
+
+    return (
+        f"hockey-{team_id}-"
+        f"{int(start.timestamp())}@hockey-calendar"
+    )
 
 
 def create_calendar(team, matches):
-    """Create one ICS calendar for one team."""
+    """Create one ICS calendar for one configured team."""
     calendar = Calendar()
 
     calendar.add(
@@ -123,7 +191,11 @@ def create_calendar(team, matches):
     calendar.add("version", "2.0")
     calendar.add("calscale", "GREGORIAN")
     calendar.add("method", "PUBLISH")
-    calendar.add("x-wr-calname", team["name"])
+
+    calendar.add(
+        "x-wr-calname",
+        team["name"],
+    )
     calendar.add(
         "x-wr-caldesc",
         "Automatisch bijgewerkt wedstrijdschema",
@@ -133,33 +205,47 @@ def create_calendar(team, matches):
         "Europe/Amsterdam",
     )
 
-    events_added = 0
-    seen_match_ids = set()
-
-    matches_with_dates = []
+    team_matches = []
 
     for match in matches:
         if not isinstance(match, dict):
             continue
 
+        if not match_involves_team(
+            match,
+            team["team_id"],
+        ):
+            continue
+
         start = parse_match_date(match)
 
-        if start is not None:
-            matches_with_dates.append((start, match))
+        if start is None:
+            continue
 
-    matches_with_dates.sort(
+        team_matches.append(
+            (start, match)
+        )
+
+    team_matches.sort(
         key=lambda item: item[0]
     )
 
-    for start, match in matches_with_dates:
+    events_added = 0
+    seen_match_ids = set()
+
+    for start, match in team_matches:
         match_id = match.get("id")
 
-        if match_id in seen_match_ids:
+        if (
+            match_id is not None
+            and match_id in seen_match_ids
+        ):
             continue
 
         if match_id is not None:
             seen_match_ids.add(match_id)
 
+        # Standaard wedstrijdduur van twee uur.
         end = start + timedelta(hours=2)
 
         opponent = get_opponent(
@@ -167,34 +253,35 @@ def create_calendar(team, matches):
             team["team_id"],
         )
 
-        subject_location, full_location = get_location(
-            match
+        short_location, full_location = (
+            get_location(match)
         )
 
-        if subject_location:
+        if short_location:
             summary = (
-                f"{opponent} | {subject_location}"
+                f"{opponent} | {short_location}"
             )
         else:
             summary = opponent
 
         event = Event()
 
-        if match_id is not None:
-            uid = (
-                f"hockey-{match_id}-"
-                f"{team['team_id']}@hockey-calendar"
-            )
-        else:
-            uid = (
-                f"hockey-{team['team_id']}-"
-                f"{int(start.timestamp())}@hockey-calendar"
-            )
+        event.add(
+            "uid",
+            create_event_uid(
+                match,
+                team["team_id"],
+                start,
+            ),
+        )
 
-        event.add("uid", uid)
         event.add("summary", summary)
+
+        # De datums hebben expliciet de tijdzone
+        # Europe/Amsterdam.
         event.add("dtstart", start)
         event.add("dtend", end)
+
         event.add(
             "dtstamp",
             datetime.now(timezone.utc),
@@ -205,7 +292,10 @@ def create_calendar(team, matches):
         )
 
         if full_location:
-            event.add("location", full_location)
+            event.add(
+                "location",
+                full_location,
+            )
 
         status = str(
             match.get("status", "")
@@ -216,54 +306,103 @@ def create_calendar(team, matches):
             "canceled",
             "afgelast",
         }:
-            event.add("status", "CANCELLED")
+            event.add(
+                "status",
+                "CANCELLED",
+            )
         else:
-            event.add("status", "CONFIRMED")
+            event.add(
+                "status",
+                "CONFIRMED",
+            )
 
         calendar.add_component(event)
         events_added += 1
 
     return calendar, events_added
 
-def create_index_page(results):
-    """Create a simple page with links to the calendars."""
 
+def create_index_page(results):
+    """Create a GitHub Pages index with calendar links."""
     links = []
 
     for result in results:
-        filename = result["file"]
-        name = result["name"]
+        filename = html.escape(
+            result["file"]
+        )
+        name = html.escape(
+            result["name"]
+        )
         events = result["events"]
 
         link = (
-            '<li>'
-            + filename
-            + ''
-            + name
-            + "</a> ("
-            + str(events)
-            + " wedstrijden)</li>"
+            "<li>"
+            f'{name}</a> '
+            f"({events} wedstrijden)"
+            "</li>"
         )
 
         links.append(link)
 
-    page = """<!doctype html>
+    updated_at = datetime.now(
+        AMSTERDAM_TIMEZONE
+    ).strftime("%d-%m-%Y %H:%M")
+
+    page = f"""<!doctype html>
 <html lang="nl">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
     <title>Hockeyagenda's</title>
+
+    <style>
+        body {{
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #222;
+        }}
+
+        h1 {{
+            color: #163d68;
+        }}
+
+        li {{
+            margin: 12px 0;
+        }}
+
+        a {{
+            color: #0067b8;
+            font-weight: bold;
+        }}
+
+        .updated {{
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }}
+    </style>
 </head>
+
 <body>
     <h1>Hockeyagenda's</h1>
-    <p>Kies een team:</p>
+
+    <p>
+        Klik op een team om het ICS-bestand te openen.
+    </p>
+
     <ul>
-"""
-
-    page += "\n".join(links)
-
-    page += """
+        {''.join(links)}
     </ul>
+
+    <p class="updated">
+        Laatst bijgewerkt: {updated_at}
+    </p>
 </body>
 </html>
 """
@@ -275,6 +414,7 @@ def create_index_page(results):
         encoding="utf-8",
     )
 
+
 async def main():
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -283,31 +423,60 @@ async def main():
 
     results = []
 
+    # Unieke team-ID's verzamelen.
+    # Team L en Team GL hebben hetzelfde team-ID,
+    # dus dit team wordt maar één keer opgehaald.
+    unique_team_ids = list(
+        dict.fromkeys(
+            team["team_id"]
+            for team in TEAMS
+        )
+    )
+
     print("HockeyWeerelt API initialiseren")
+    print(
+        f"Unieke team-ID's: {unique_team_ids}"
+    )
 
     async with await Api.create() as api:
         print("API succesvol geïnitialiseerd")
 
+        # Eén gecombineerde API-aanvraag voor alle
+        # unieke teams. Dit beperkt de kans op een
+        # 429 Too Many Requests-fout.
+        print("Wedstrijden ophalen")
+
+        all_matches = (
+            await api.get_matches_for_teams(
+                unique_team_ids
+            )
+        )
+
+        print(
+            f"{len(all_matches)} wedstrijden "
+            f"ontvangen"
+        )
+
         for team in TEAMS:
             print("")
             print("=" * 60)
-            print(f"Team verwerken: {team['name']}")
-            print(f"Team-ID: {team['team_id']}")
-
-            matches = await api.get_matches_for_teams(
-                [team["team_id"]]
-            )
-
             print(
-                f"{len(matches)} wedstrijden ontvangen"
+                f"Team verwerken: {team['name']}"
+            )
+            print(
+                f"Team-ID: {team['team_id']}"
             )
 
-            calendar, events_added = create_calendar(
-                team,
-                matches,
+            calendar, events_added = (
+                create_calendar(
+                    team,
+                    all_matches,
+                )
             )
 
-            output_file = OUTPUT_DIR / team["file"]
+            output_file = (
+                OUTPUT_DIR / team["file"]
+            )
 
             output_file.write_bytes(
                 calendar.to_ical()
@@ -329,7 +498,9 @@ async def main():
     create_index_page(results)
 
     print("")
-    print("Alle kalenderbestanden zijn aangemaakt:")
+    print(
+        "Alle kalenderbestanden zijn aangemaakt:"
+    )
 
     for result in results:
         print(
