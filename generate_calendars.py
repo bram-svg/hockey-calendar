@@ -19,7 +19,7 @@ TEAMS = [
         "file": "team-C.ics",
     },
     {
-        "team_ids": [6344],
+        "team_ids": [6344, 11864],
         "name": "Team N",
         "file": "team-N.ics",
     },
