@@ -29,12 +29,12 @@ TEAMS = [
         "file": "team-F.ics",
     },
     {
-        "team_ids": [39358],
+        "team_ids": [39358, 47122],
         "name": "Team L",
         "file": "team-L.ics",
     },
     {
-        "team_ids": [39358],
+        "team_ids": [39358, 47122],
         "name": "Team G",
         "file": "team-G.ics",
     },
