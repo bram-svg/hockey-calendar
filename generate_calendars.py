@@ -300,7 +300,7 @@ async def main():
                     print(
                         f"{len(matches_cache[team_id])} wedstrijden ontvangen"
                     )
-                    await asyncio.sleep(3)
+                    await asyncio.sleep(15)
 
                 for match in matches_cache[team_id]:
                     match_id = match.get("id") if isinstance(match, dict) else None
